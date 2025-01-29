@@ -1,0 +1,32 @@
+name: Fetch GlobalProtect XML
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs every night at midnight UTC
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch XML
+        run: python fetch_xml.py
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add globalprotect.xml
+          git commit -m "🔄 Update GlobalProtect XML" || echo "No changes to commit"
+          git push
