@@ -54,46 +54,48 @@
 
             // Generate UI
             const versionsDiv = document.getElementById('versions');
-            Object.entries(versionMap).forEach(([major, versions]) => {
-                const latestVersion = versions[0]; // Default to latest minor version
+            Object.entries(versionMap)
+                .sort(([a], [b]) => Number(b) - Number(a)) // Sort major versions numerically in descending order
+                .forEach(([major, versions]) => {
+                    const latestVersion = versions[0]; // Default to latest minor version
 
-                const section = document.createElement('div');
-                section.className = 'version-section';
+                    const section = document.createElement('div');
+                    section.className = 'version-section';
 
-                const title = document.createElement('h2');
-                title.textContent = `GlobalProtect ${major}.x`;
+                    const title = document.createElement('h2');
+                    title.textContent = `GlobalProtect ${major}.x`;
 
-                const select = document.createElement('select');
-                versions.forEach(version => {
-                    const option = document.createElement('option');
-                    option.value = version;
-                    option.textContent = version;
-                    select.appendChild(option);
+                    const select = document.createElement('select');
+                    versions.forEach(version => {
+                        const option = document.createElement('option');
+                        option.value = version;
+                        option.textContent = version;
+                        select.appendChild(option);
+                    });
+                    select.value = latestVersion;
+
+                    const msiLink = document.createElement('a');
+                    const pkgLink = document.createElement('a');
+                    const updateLinks = () => {
+                        const selectedVersion = select.value;
+                        msiLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect64.msi`;
+                        pkgLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect.pkg`;
+                        msiLink.textContent = `Download MSI`;
+                        pkgLink.textContent = `Download PKG`;
+                    };
+
+                    select.addEventListener('change', updateLinks);
+                    updateLinks(); // Initialize links
+
+                    section.appendChild(title);
+                    section.appendChild(select);
+                    section.appendChild(document.createElement('br'));
+                    section.appendChild(msiLink);
+                    section.appendChild(document.createTextNode(' | '));
+                    section.appendChild(pkgLink);
+
+                    versionsDiv.appendChild(section);
                 });
-                select.value = latestVersion;
-
-                const msiLink = document.createElement('a');
-                const pkgLink = document.createElement('a');
-                const updateLinks = () => {
-                    const selectedVersion = select.value;
-                    msiLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect64.msi`;
-                    pkgLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect.pkg`;
-                    msiLink.textContent = `Download MSI`;
-                    pkgLink.textContent = `Download PKG`;
-                };
-
-                select.addEventListener('change', updateLinks);
-                updateLinks(); // Initialize links
-
-                section.appendChild(title);
-                section.appendChild(select);
-                section.appendChild(document.createElement('br'));
-                section.appendChild(msiLink);
-                section.appendChild(document.createTextNode(' | '));
-                section.appendChild(pkgLink);
-
-                versionsDiv.appendChild(section);
-            });
         }
 
             loadGlobalProtectData().catch(err => console.error("Error loading data:", err));
