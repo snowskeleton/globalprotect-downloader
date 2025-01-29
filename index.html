@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,92 +9,95 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            text-align: center;
         }
-        select, a {
-            margin-top: 10px;
+
+        .version-section {
+            margin-bottom: 20px;
             padding: 10px;
-            font-size: 16px;
+            border: 1px solid #ddd;
         }
-        #downloadLink {
-            display: block;
-            text-decoration: none;
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-        #downloadLink:hover {
-            background-color: #0056b3;
+
+        select,
+        button {
+            margin-top: 5px;
+            padding: 5px;
         }
     </style>
 </head>
-<body>
-    <h2>GlobalProtect Downloader</h2>
 
-    <label for="versionSelect">Select Version:</label>
-    <select id="versionSelect" onchange="updateDownloadLink()">
-        <option>Loading...</option>
-    </select>
-    
-    <br>
-    <a id="downloadLink" href="#" target="_blank">Download</a>
+<body>
+
+    <h1>GlobalProtect Downloader</h1>
+    <div id="versions"></div>
 
     <script>
-        async function loadXML() {
-            try {
-                const response = await fetch("globalprotect.xml");
-                const text = await response.text();
-                parseXML(text);
-            } catch (error) {
-                console.error("Failed to load XML:", error);
-                document.getElementById("versionSelect").innerHTML = "<option>Error loading</option>";
-            }
-        }
-
-        function parseXML(xmlText) {
+            async function loadGlobalProtectData() {
+                const response = await fetch('globalprotect.xml');
+                const xmlText = await response.text();
             const parser = new DOMParser();
-            const xml = parser.parseFromString(xmlText, "text/xml");
+            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
 
-            const keys = [...xml.getElementsByTagName("Key")];
-            let versions = new Set();
+            // Extract all available versions
+            const keys = Array.from(xmlDoc.getElementsByTagName('Key'))
+                .map(el => el.textContent)
+                .filter(key => key.match(/^\d+\.\d+\.\d+-\d+\/$/)) // Match version folders like "6.2.3-270/"
+                .map(key => key.replace('/', '')) // Remove trailing slash
+                .sort((a, b) => b.localeCompare(a, undefined, { numeric: true })); // Sort in descending order
 
-            keys.forEach(key => {
-                const path = key.textContent;
-                const match = path.match(/^([\d.]+-\d+)\//);
-                if (match) versions.add(match[1]);
+            // Group by major version (e.g., 6.2 -> 6.2.3-270)
+            const versionMap = {};
+            keys.forEach(version => {
+                const major = version.match(/^(\d+\.\d+)/)[1]; // Extract "6.2" from "6.2.3-270"
+                if (!versionMap[major]) versionMap[major] = [];
+                versionMap[major].push(version);
             });
 
-            populateDropdown([...versions].sort());
-        }
+            // Generate UI
+            const versionsDiv = document.getElementById('versions');
+            Object.entries(versionMap).forEach(([major, versions]) => {
+                const latestVersion = versions[0]; // Default to latest minor version
 
-        function populateDropdown(versions) {
-            const select = document.getElementById("versionSelect");
-            select.innerHTML = "";
-            versions.forEach(version => {
-                const option = document.createElement("option");
-                option.value = version;
-                option.textContent = version;
-                select.appendChild(option);
+                const section = document.createElement('div');
+                section.className = 'version-section';
+
+                const title = document.createElement('h2');
+                title.textContent = `GlobalProtect ${major}`;
+
+                const select = document.createElement('select');
+                versions.forEach(version => {
+                    const option = document.createElement('option');
+                    option.value = version;
+                    option.textContent = version;
+                    select.appendChild(option);
+                });
+                select.value = latestVersion;
+
+                const msiLink = document.createElement('a');
+                const pkgLink = document.createElement('a');
+                const updateLinks = () => {
+                    const selectedVersion = select.value;
+                    msiLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect64.msi`;
+                    pkgLink.href = `https://pan-gp-client.s3.amazonaws.com/${selectedVersion}/GlobalProtect.pkg`;
+                    msiLink.textContent = `Download MSI`;
+                    pkgLink.textContent = `Download PKG`;
+                };
+
+                select.addEventListener('change', updateLinks);
+                updateLinks(); // Initialize links
+
+                section.appendChild(title);
+                section.appendChild(select);
+                section.appendChild(document.createElement('br'));
+                section.appendChild(msiLink);
+                section.appendChild(document.createTextNode(' | '));
+                section.appendChild(pkgLink);
+
+                versionsDiv.appendChild(section);
             });
-
-            updateDownloadLink();
         }
 
-        function updateDownloadLink() {
-            const selectedVersion = document.getElementById("versionSelect").value;
-            if (!selectedVersion) return;
-
-            const baseUrl = "https://pan-gp-client.s3.amazonaws.com/";
-            const link = `${baseUrl}${selectedVersion}/GlobalProtect64.msi`;
-
-            document.getElementById("downloadLink").href = link;
-            document.getElementById("downloadLink").textContent = `Download ${selectedVersion}`;
-        }
-
-        // Load XML on page load
-        loadXML();
+            loadGlobalProtectData().catch(err => console.error("Error loading data:", err));
     </script>
 </body>
+
 </html>
