@@ -47,7 +47,7 @@
             // Group by major version (e.g., 6.2 -> 6.2.3-270)
             const versionMap = {};
             keys.forEach(version => {
-                const major = version.match(/^(\d+\.\d+)/)[1]; // Extract "6.2" from "6.2.3-270"
+                const major = version.match(/^(\d+\.)/)[1]; // Extract "6.2" from "6.2.3-270"
                 if (!versionMap[major]) versionMap[major] = [];
                 versionMap[major].push(version);
             });
