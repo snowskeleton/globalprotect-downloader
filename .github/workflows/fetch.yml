@@ -34,3 +34,11 @@ jobs:
           git add globalprotect.xml
           git commit -m "🔄 Update GlobalProtect XML" || exit 0
           git push https://x-access-token:${GH_PAT}@github.com/${{ github.repository }}.git main
+
+  workflow-keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: liskin/gh-workflow-keepalive@v1
